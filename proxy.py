@@ -8,7 +8,6 @@ import sys
 
 
 #URL = "https://en.wikipedia.org"
-URL = "https://daily-eden-ai.workload.tenstorrent.com/predictions/sentiment_analysis"
 KEY = "1234"
 
 
