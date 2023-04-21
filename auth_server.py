@@ -8,7 +8,7 @@ https://gist.github.com/dragermrb/108158f5a284b5fba806
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 
-
+URL = "https://en.wikipedia.org"
 KEY = "1234"
 
 
@@ -50,7 +50,6 @@ class AuthServer(BaseHTTPRequestHandler):
             self.send_header("Content-type", "text/plain")
             self.end_headers()
             self.wfile.write(bytes(text_reply, "utf-8"))
-
 
 
 def main():

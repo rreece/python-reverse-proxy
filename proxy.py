@@ -1,13 +1,20 @@
 #!/usr/bin/env python3
+import argparse
 from http.server import BaseHTTPRequestHandler,HTTPServer
-import argparse, sys, requests
-
+import os
+import requests
 from socketserver import ThreadingMixIn
+import sys
+
+
+#URL = "https://en.wikipedia.org"
+URL = "https://daily-eden-ai.workload.tenstorrent.com/predictions/sentiment_analysis"
+KEY = "1234"
 
 
 class ProxyHTTPRequestHandler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.0"
-    hostname = "en.wikipedia.org"
+    hostname = URL
 
     def do_HEAD(self):
         self.do_GET(body=False)
@@ -16,16 +23,16 @@ class ProxyHTTPRequestHandler(BaseHTTPRequestHandler):
     def do_GET(self, body=True):
         sent = False
         try:
-            url = "https://{}{}".format(self.hostname, self.path)
-            req_headers = self.parse_headers()
-
-            print(req_headers)
-            print(url)
+            url = "%s%s" % (URL, self.path)
+            print("DEBUG: url = ", url)
+            req_headers = self.parse_headers(self.headers)
+#            print(req_headers)
+#            print(url)
             headers = dict(req_headers)
-#            headers.update({"Host": self.hostname})
+            headers.update({"Host": self.hostname})
             resp = requests.get(url, headers=headers, verify=False)
             sent = True
-            help(resp)
+#            help(resp)
             self.send_response(resp.status_code)
             self.send_resp_headers(resp)
             msg = resp.text
@@ -39,15 +46,19 @@ class ProxyHTTPRequestHandler(BaseHTTPRequestHandler):
     def do_POST(self, body=True):
         sent = False
         try:
-            url = "https://{}{}".format(self.hostname, self.path)
+            url = "%s%s" % (URL, self.path)
+            print("DEBUG: URL = ", URL)
+            print("DEBUG: url = ", url)
             content_len = int(self.headers.get("Content-Length", 0))
             post_body = self.rfile.read(content_len)
-            req_headers = self.parse_headers()
+            req_headers = self.parse_headers(self.headers)
             headers = dict(req_headers)
             headers.update({"Host": self.hostname})
+            print("DEBUG: post_body = ", post_body)
+            print("DEBUG: headers = ", headers)
             resp = requests.post(url, data=post_body, headers=headers, verify=False)
+            print("DEBUG: resp = ", headers)
             sent = True
-
             self.send_response(resp.status_code)
             self.send_resp_headers(resp)
             if body:
@@ -57,12 +68,14 @@ class ProxyHTTPRequestHandler(BaseHTTPRequestHandler):
             if not sent:
                 self.send_error(404, "ERROR trying to proxy!")
 
-    def parse_headers(self):
+    def parse_headers(self, headers):
+        print("DEBUG: type(parse_headers) = ", type(headers))
+        print("DEBUG: parse_headers = ", headers)
         req_headers = {}
-        for line in self.headers:
-            line_parts = [o.strip() for o in line.split(":", 1)]
-            if len(line_parts) == 2:
-                req_headers[line_parts[0]] = line_parts[1]
+        for key in headers:
+            print("DEBUG: parse_headers key = ", key)
+            req_headers[key] = headers[key]
+        print("DEBUG: parse_headers req_headers = ", req_headers)
         return req_headers
 
     def send_resp_headers(self, resp):
@@ -80,7 +93,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Proxy HTTP requests")
     parser.add_argument("--port", dest="port", type=int, default=9999,
                         help="serve HTTP requests on specified port (default: random)")
-    parser.add_argument("--hostname", dest="hostname", type=str, default="en.wikipedia.org",
+    parser.add_argument("--hostname", dest="hostname", type=str, default=URL,
                         help="hostname to be processd (default: en.wikipedia.org)")
     args = parser.parse_args()
     return args
@@ -93,8 +106,9 @@ class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
 def main():
     args = parse_args()
     ProxyHTTPRequestHandler.hostname = args.hostname
-    print("http server is starting on {} port {}...".format(args.hostname, args.port))
-    server_address = ("127.0.0.1", args.port)
+    localhost = "127.0.0.1"
+    print("http server is starting on {} port {}...".format(localhost, args.port))
+    server_address = (localhost, args.port)
     httpd = ThreadedHTTPServer(server_address, ProxyHTTPRequestHandler)
     print("http server is running as reverse proxy")
 
