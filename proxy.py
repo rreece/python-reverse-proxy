@@ -7,7 +7,7 @@ from socketserver import ThreadingMixIn
 import sys
 
 
-#URL = "https://en.wikipedia.org"
+URL = "https://en.wikipedia.org"
 KEY = "1234"
 
 
